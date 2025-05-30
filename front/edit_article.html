@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Редактировать статью</title>
+  <style>
+    body { font-family: sans-serif; background: #fafaff; margin: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 14px; box-shadow: 0 4px 20px #0001; padding: 32px 28px 26px 28px; }
+    h2 { color: #25499e; }
+    form { margin-top: 24px; }
+    input, textarea { width: 100%; padding: 9px; border: 1.5px solid #548aff; border-radius: 7px; font-size: 16px; margin-bottom: 16px; box-sizing: border-box; }
+    textarea { resize: vertical; min-height: 100px; }
+    button {
+      background: #548aff;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 10px 28px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover { background: #315fcb; }
+    .msg { margin-top: 15px; min-height: 20px; }
+    .msg.success { color: green; }
+    .msg.error { color: #b21818; }
+    .back-link { display: inline-block; margin-bottom: 16px; color: #548aff; text-decoration: underline; font-size: 15px;}
+    .back-link:hover { color: #315fcb;}
+    .rejection-reason { color: #b21818; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="author_rejected.html">← К списку отклонённых</a>
+    <h2>Редактировать статью</h2>
+    <div id="rejection" class="rejection-reason"></div>
+    <form id="editForm">
+      <input type="text" name="title" placeholder="Заголовок" required>
+      <textarea name="content" rows="7" placeholder="Текст статьи" required></textarea>
+      <button type="submit">Отправить на модерацию</button>
+      <div class="msg" id="formMsg"></div>
+    </form>
+  </div>
+  <script>
+    // Вспомогательная функция для XSS
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>"']/g, function(m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+      });
+    }
+
+    // Получить id из URL (?id=...)
+    function getArticleId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    const editForm = document.getElementById('editForm');
+    const formMsg = document.getElementById('formMsg');
+    const rejection = document.getElementById('rejection');
+    const articleId = getArticleId();
+
+    // Подгрузить данные статьи
+    async function loadArticle() {
+      if (!articleId) {
+        formMsg.textContent = "Некорректный адрес страницы";
+        formMsg.className = "msg error";
+        editForm.style.display = "none";
+        return;
+      }
+      try {
+        const res = await fetch(`/author/articles/${articleId}`, { credentials: "include" });
+        if (!res.ok) throw new Error();
+        const art = await res.json();
+
+        editForm.title.value = art.title || "";
+        editForm.content.value = art.content || "";
+
+        if (art.rejection_reason)
+          rejection.innerHTML = "Причина отклонения: <b>" + escapeHTML(art.rejection_reason) + "</b>";
+      } catch {
+        formMsg.textContent = "Ошибка загрузки статьи";
+        formMsg.className = "msg error";
+        editForm.style.display = "none";
+      }
+    }
+
+    // Отправить на сервер (PUT или POST — выбери что реализуешь)
+    editForm.onsubmit = async function(e) {
+      e.preventDefault();
+      formMsg.textContent = "";
+      formMsg.className = "msg";
+
+      const data = {
+        title: editForm.title.value.trim(),
+        content: editForm.content.value.trim()
+      };
+
+      try {
+        const res = await fetch(`/author/articles/${articleId}/edit`, {
+          method: "POST", // Или "PUT" — как реализуешь на бэке!
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        formMsg.textContent = "Статья отправлена на модерацию!";
+        formMsg.className = "msg success";
+        setTimeout(() => window.location.href = "author_main.html", 1000);
+      } catch (err) {
+        formMsg.textContent = "Ошибка: " + (err.message || "Не удалось отправить статью");
+        formMsg.className = "msg error";
+      }
+    };
+
+    loadArticle();
+  </script>
+</body>
+</html>

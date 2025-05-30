@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Публикации</title>
+  <style>
+    body { font-family: sans-serif; background: #fafaff; margin: 0; }
+    .container { max-width: 700px; margin: 40px auto; padding: 24px; background: #fff;
+      border-radius: 16px; box-shadow: 0 4px 24px #0001; }
+    h2 { color: #29479b; margin-top: 0; }
+    .articles-top-panel {
+      display: flex; gap: 18px; align-items: center; margin-bottom: 16px;
+      justify-content: space-between; /* Добавлено для выравнивания */
+    }
+    .articles-left-panel {
+      display: flex; gap: 18px;
+    }
+    .create-link, .rejected-link {
+      display: inline-block;
+      color: #548aff;
+      text-decoration: underline;
+      font-size: 15px;
+      padding: 5px 0;
+      cursor: pointer;
+      font-weight: 500;
+      transition: 0.15s;
+      margin-right: 10px;
+    }
+    .create-link:hover, .rejected-link:hover { color: #315fcb;}
+    .logout-link {
+      display: inline-block;
+      color: #dc3545;
+      text-decoration: underline;
+      font-size: 15px;
+      padding: 5px 0;
+      cursor: pointer;
+      font-weight: 500;
+      transition: 0.15s;
+    }
+    .logout-link:hover { color: #bd2130; }
+    .article { padding: 18px 12px; border-bottom: 1px solid #eee; margin-bottom: 12px;
+      border-radius: 8px; background: #f8faff; box-shadow: 0 1px 3px #548aff11; }
+    .article:last-child { border-bottom: none; }
+    .article-title { font-size: 22px; font-weight: bold; margin-bottom: 8px; color: #2e468c; }
+    .article-meta { color: #777; font-size: 15px; margin-bottom: 8px; }
+    .article-content { font-size: 16px; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="articles-top-panel">
+      <div class="articles-left-panel">
+        <h2>Все опубликованные статьи</h2>
+      </div>
+      <div>
+        <a class="logout-link" id="logoutBtn">Выйти</a>
+      </div>
+    </div>
+    <div class="articles-top-panel">
+      <div class="articles-left-panel">
+        <a class="create-link" href="author.html">Написать новую статью</a>
+        <a class="rejected-link" href="author_rejected.html">Мои статьи</a>
+      </div>
+    </div>
+    <div id="articlesList"></div>
+  </div>
+  <script>
+    const articlesList = document.getElementById('articlesList');
+
+    // Функция для выхода
+    async function logout() {
+      try {
+        // Отправляем запрос на сервер для выхода
+        const response = await fetch('/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        // Перенаправляем на главную страницу
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('Ошибка при выходе:', error);
+        alert('Не удалось выйти. Попробуйте снова.');
+      }
+    }
+
+    // Назначаем обработчик кнопке выхода
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      logout();
+    });
+
+    // Функция форматирования даты
+    function formatDate(str) {
+      if (!str) return "";
+      try {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return escapeHTML(str);
+        // Формат: 27.05.2025, 16:43
+        return d.toLocaleString('ru-RU', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      } catch {
+        return escapeHTML(str);
+      }
+    }
+
+    async function loadAllArticles() {
+      articlesList.innerHTML = "<em>Загрузка...</em>";
+      try {
+        // Получаем только опубликованные статьи!
+        const res = await fetch("/articles", { credentials: "include" });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!Array.isArray(data.articles) || data.articles.length === 0) {
+          articlesList.innerHTML = "<em>Пока нет публикаций.</em>";
+          return;
+        }
+        articlesList.innerHTML = "";
+        for (const art of data.articles) {
+          articlesList.innerHTML += `
+            <div class="article">
+              <div class="article-title">${escapeHTML(art.title)}</div>
+              <div class="article-meta">
+                Автор: ${escapeHTML(art.username)} | Дата: ${formatDate(art.published_at)}
+              </div>
+              <div class="article-content">${escapeHTML(art.content)}</div>
+            </div>`;
+        }
+      } catch {
+        articlesList.innerHTML = "<span style='color:red'>Ошибка загрузки статей</span>";
+      }
+    }
+
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>"']/g, function (m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+      });
+    }
+
+    loadAllArticles();
+  </script>
+</body>
+</html>

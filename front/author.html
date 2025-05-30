@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Создать статью</title>
+  <style>
+    body { font-family: sans-serif; background: #fafaff; margin: 0; }
+    .container { max-width: 550px; margin: 48px auto; background: #fff; border-radius: 14px; box-shadow: 0 4px 20px #0001; padding: 32px 32px 26px 32px; }
+    h2 { margin-top: 0; color: #29479b; margin-bottom: 24px; }
+    form { background: #f5f8ff; border: 1.5px solid #b2c4e2; border-radius: 12px; padding: 24px 18px 18px 18px; }
+    input, textarea { width: 100%; font-size: 16px; padding: 10px; border: 1.5px solid #548aff; border-radius: 6px; margin-bottom: 16px; box-sizing: border-box; }
+    input:focus, textarea:focus { border-color: #315fcb; background: #eef3ff; }
+    button { background: #548aff; color: #fff; border: none; border-radius: 7px; padding: 10px 32px; font-size: 17px; cursor: pointer; font-weight: 500; }
+    button:hover { background: #315fcb; }
+    .success-msg { color: green; min-height: 18px; margin-top: 10px;}
+    .error-msg { color: red; min-height: 18px; margin-top: 10px;}
+    .main-link { display: inline-block; margin-top: 18px; color: #548aff; text-decoration: underline; font-size: 15px; }
+    .main-link:hover { color: #315fcb;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Создать статью</h2>
+    <form id="createForm">
+      <input type="text" name="title" placeholder="Заголовок" required>
+      <textarea name="content" rows="7" placeholder="Основной текст" required></textarea>
+      <button type="submit">Отправить на модерацию</button>
+      <div class="success-msg" id="createSuccess"></div>
+      <div class="error-msg" id="createError"></div>
+    </form>
+    <a class="main-link" href="author_main.html">← Ко всем публикациям</a>
+  </div>
+  <script>
+    const createForm = document.getElementById('createForm');
+    createForm.onsubmit = async (e) => {
+      e.preventDefault();
+      document.getElementById('createSuccess').textContent = "";
+      document.getElementById('createError').textContent = "";
+      const data = new FormData(createForm);
+      const json = Object.fromEntries(data.entries());
+      const res = await fetch("/author/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(json)
+      });
+      if (res.ok) {
+        document.getElementById('createSuccess').textContent = "Статья отправлена на модерацию!";
+        createForm.reset();
+      } else {
+        const errMsg = await res.text();
+        document.getElementById('createError').textContent = errMsg || "Ошибка публикации";
+      }
+    };
+  </script>
+</body>
+</html>

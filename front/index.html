@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Вход</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #fafaff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 95vh;
+    }
+    .auth-box {
+      padding: 32px 24px 16px 24px;
+      border: 1px solid #eee;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px #0001;
+      min-width: 320px;
+    }
+    h2 { margin-top: 0; }
+    input, button {
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #548aff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: 0.15s;
+    }
+    button:hover { background: #4465b3; }
+    .auth-footer {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 15px;
+      color: #999;
+    }
+    #loginError { color: red; min-height: 22px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="auth-box">
+    <h2>Вход</h2>
+    <form id="loginForm">
+      <input type="email" name="email" placeholder="Email" required><br>
+      <input type="password" name="password" placeholder="Пароль" required><br>
+      <button type="submit">Войти</button>
+    </form>
+    <div id="loginError"></div>
+    <div class="auth-footer">
+      Нет доступа? Обратитесь к администратору
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").onsubmit = async (e) => {
+      e.preventDefault();
+      document.getElementById("loginError").textContent = "";
+      const data = new FormData(e.target);
+      const json = Object.fromEntries(data.entries());
+
+      // Сначала логинимся
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "include",
+        body: JSON.stringify(json)
+      });
+
+      if (res.ok) {
+        // После успешного логина узнаём роль пользователя
+        const profileRes = await fetch("/me", {credentials: "include"});
+        if (profileRes.ok) {
+          const user = await profileRes.json();
+          if (user.role === "admin") {
+            window.location.href = "/main_admin.html";
+          } else if (user.role === "author") {
+            window.location.href = "/author_main.html";
+          } else if (user.role === "moderator") {
+            window.location.href = "/moderator_main.html";
+          } else {
+            window.location.href = "/main.html";
+          }
+        } else {
+          // fallback: если не удалось узнать роль
+          window.location.href = "/main.html";
+        }
+      } else {
+        const errMsg = await res.text();
+        document.getElementById("loginError").textContent = errMsg || "Ошибка входа";
+      }
+    };
+  </script>
+</body>
+</html>

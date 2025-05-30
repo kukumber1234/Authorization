@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Модерация статей</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f7fc; margin: 0; padding: 0; }
+    .container { max-width: 750px; margin: 36px auto; background: #fff; border-radius: 14px; box-shadow: 0 4px 20px #0001; padding: 30px 32px 26px 32px; }
+    h2 { margin-top: 0; color: #29479b; margin-bottom: 24px; }
+    .article { border-bottom: 1px solid #eee; margin-bottom: 20px; padding-bottom: 18px; }
+    .article:last-child { border-bottom: none; }
+    .article-title { font-size: 20px; font-weight: bold; color: #2e468c; }
+    .article-info { color: #666; font-size: 15px; margin-bottom: 8px; }
+    .article-content { font-size: 16px; color: #333; margin-bottom: 8px;}
+    .moderate-actions { margin-top: 8px; }
+    .moderate-actions button { margin-right: 8px; background: #548aff; color: #fff; border: none; border-radius: 7px; padding: 8px 18px; font-size: 15px; cursor: pointer; }
+    .moderate-actions button:hover { background: #315fcb; }
+    .moderate-actions input { padding: 6px; font-size: 15px; border-radius: 5px; border: 1px solid #ddd; margin-right: 6px;}
+    .success-msg { color: green; margin-top: 5px;}
+    .error-msg { color: red; margin-top: 5px;}
+    .top-panel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+    .admin-link { background:#315fcb; color:#fff; padding:9px 24px; border-radius:7px; text-decoration:none; font-size:16px; font-weight:500;}
+    .admin-link:hover { background:#223a7b;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-panel">
+      <h2>Модерация статей</h2>
+      <a href="moderator_main.html" class="admin-link">На главную</a>
+    </div>
+    <div id="articlesList"></div>
+  </div>
+  <script>
+    const articlesList = document.getElementById('articlesList');
+
+    // Получение статей на модерации
+    async function loadModerationArticles() {
+      articlesList.innerHTML = "<em>Загрузка...</em>";
+      try {
+        const res = await fetch("/moderator/articles", { credentials: "include" });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!Array.isArray(data.articles) || data.articles.length === 0) {
+          articlesList.innerHTML = "<em>Нет статей на модерации.</em>";
+          return;
+        }
+        articlesList.innerHTML = "";
+        for (const art of data.articles) {
+          // Преобразуем дату к нормальному виду
+          let createdAtStr = "";
+          if (art.created_at) {
+            // Предполагается, что art.created_at приходит в формате ISO строки ("2025-05-27T10:54:32.000Z")
+            createdAtStr = new Date(art.created_at).toLocaleString('ru-RU');
+          }
+          articlesList.innerHTML += `
+            <div class="article" data-id="${escapeHTML(art.id)}">
+              <div class="article-title">${escapeHTML(art.title)}</div>
+              <div class="article-info">
+                Автор: ${escapeHTML(art.username)}<br>
+                Дата подачи: ${escapeHTML(createdAtStr)}
+              </div>
+              <div class="article-content">${escapeHTML(art.content)}</div>
+              <div class="moderate-actions">
+                <button onclick="approveArticle('${escapeHTML(art.id)}')">Опубликовать</button>
+                <input type="text" id="reason-${escapeHTML(art.id)}" placeholder="Причина отклонения...">
+                <button onclick="rejectArticle('${escapeHTML(art.id)}')">Отклонить</button>
+              </div>
+              <div class="success-msg" id="success-${escapeHTML(art.id)}"></div>
+              <div class="error-msg" id="error-${escapeHTML(art.id)}"></div>
+            </div>
+          `;
+        }
+      } catch {
+        articlesList.innerHTML = "<span style='color:red'>Ошибка загрузки статей</span>";
+      }
+    }
+
+    // Экранирование для XSS
+    function escapeHTML(str) {
+      return String(str ?? '').replace(/[&<>"']/g, function(m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+      });
+    }
+
+    // Функция публикации
+    window.approveArticle = async function(articleId) {
+      document.getElementById(`success-${articleId}`).textContent = "";
+      document.getElementById(`error-${articleId}`).textContent = "";
+      try {
+        const res = await fetch(`/moderator/articles/${articleId}/approve`, {
+          method: "POST",
+          credentials: "include"
+        });
+        if (!res.ok) throw new Error(await res.text());
+        document.getElementById(`success-${articleId}`).textContent = "Статья опубликована!";
+        setTimeout(loadModerationArticles, 900);
+      } catch (e) {
+        document.getElementById(`error-${articleId}`).textContent = "Ошибка: " + (e.message || "");
+      }
+    };
+
+    // Функция отклонения
+    window.rejectArticle = async function(articleId) {
+      document.getElementById(`success-${articleId}`).textContent = "";
+      document.getElementById(`error-${articleId}`).textContent = "";
+      const reason = document.getElementById(`reason-${articleId}`).value;
+      if (!reason.trim()) {
+        document.getElementById(`error-${articleId}`).textContent = "Укажите причину отклонения";
+        return;
+      }
+      try {
+        const res = await fetch(`/moderator/articles/${articleId}/reject`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          credentials: "include",
+          body: JSON.stringify({ reason })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        document.getElementById(`success-${articleId}`).textContent = "Статья отклонена";
+        setTimeout(loadModerationArticles, 900);
+      } catch (e) {
+        document.getElementById(`error-${articleId}`).textContent = "Ошибка: " + (e.message || "");
+      }
+    };
+
+    // Первичная загрузка статей
+    loadModerationArticles();
+  </script>
+</body>
+</html>

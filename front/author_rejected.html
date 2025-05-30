@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Личный кабинет автора</title>
+  <style>
+     body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    }
+
+    /* Навигация */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 25px;
+    }
+
+    /* Стили кнопок */
+    .button {
+      display: inline-block;
+      padding: 10px 25px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: 0.2s;
+    }
+
+    .button.back {
+      background: #6c757d;
+      color: white;
+    }
+
+    .button.new {
+      background: #315fcb;
+      color: white;
+    }
+
+    .button:hover {
+      opacity: 0.9;
+    }
+
+    /* Заголовок страницы */
+    h2 {
+      color: #2c3e50;
+      margin-bottom: 25px;
+    }
+
+    /* Стили статей */
+    .article {
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border-left: 5px solid;
+      background: #f8f9fa;
+    }
+
+    .article.rejected {
+      border-color: #dc3545;
+      background: #fff5f5;
+    }
+
+    .article.pending {
+      border-color: #ffc107;
+      background: #fff9e6;
+    }
+
+    .article.published {
+      border-color: #28a745;
+      background: #e6ffee;
+    }
+
+    .article-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .article-status {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .rejected .article-status {
+      background: #dc3545;
+      color: white;
+    }
+
+    .pending .article-status {
+      background: #ffc107;
+      color: black;
+    }
+
+    .published .article-status {
+      background: #28a745;
+      color: white;
+    }
+
+    .article-content {
+      color: #495057;
+      margin-top: 10px;
+    }
+
+    /* Сообщение, если статей нет */
+    .no-articles {
+      color: #6c757d;
+      font-style: italic;
+    }
+
+    .edit-btn {
+      display: inline-block;
+      background: #315fcb;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 14px;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+
+    .edit-btn:hover {
+      background: #25499e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-buttons">
+      <a href="javascript:history.back()" class="button back">← Назад</a>
+      <a href="author.html" class="button new">+ Новая статья</a>
+    </div>
+
+    <h2>Все мои статьи</h2>
+    
+    <div id="articlesList"></div>
+  </div>
+
+  <script>
+    async function loadArticles() {
+      const container = document.getElementById('articlesList');
+      container.innerHTML = '<em>Загрузка...</em>';
+
+      try {
+        const response = await fetch('/author/articles/all');
+        if (!response.ok) throw new Error('Ошибка загрузки');
+        
+        const data = await response.json();
+        
+        if (!data.articles || data.articles.length === 0) {
+          container.innerHTML = '<div class="no-articles">У вас пока нет статей.</div>';
+          return;
+        }
+
+        container.innerHTML = '';
+
+        data.articles.forEach(article => {
+          const status = getStatus(article.status);
+          const articleHTML = `
+            <div class="article ${status.class}">
+              <div class="article-status">${status.label}</div>
+              <div class="article-title">${escapeHTML(article.title)}</div>
+              ${article.status === 'rejected' 
+                ? `<div class="rejection-reason">Причина: ${escapeHTML(article.rejection_reason || 'не указана')}</div>` 
+                : ''}
+              <div class="article-content">${escapeHTML(article.content)}</div>
+              
+              <!-- Кнопка исправить для отклонённых статей -->
+              ${article.status === 'rejected' 
+                ? `<a href="edit_article.html?id=${article.id}" class="edit-btn">Исправить статью</a>` 
+                : ''}
+            </div>
+          `;
+          container.innerHTML += articleHTML;
+        });
+
+      } catch (error) {
+        console.error('Ошибка:', error);
+        container.innerHTML = '<div style="color: red">Ошибка загрузки статей</div>';
+      }
+    }
+
+    function getStatus(status) {
+      switch (status) {
+        case 'rejected': 
+          return { class: 'rejected', label: 'Отклонена' };
+        case 'pending': 
+          return { class: 'pending', label: 'На модерации' };
+        case 'published': 
+          return { class: 'published', label: 'Опубликована' };
+        default: 
+          return { class: '', label: 'Неизвестно' };
+      }
+    }
+
+    function escapeHTML(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    loadArticles();
+  </script>
+</body>
+</html>
