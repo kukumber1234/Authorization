@@ -4,7 +4,6 @@ import (
 	"Authorization/internal/adapter/handler"
 	"Authorization/internal/adapter/repository/postgres"
 	"Authorization/internal/logger"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -13,11 +12,7 @@ import (
 
 func Start() {
 	if os.Getenv("RENDER") == "" { // если локально
-		err := godotenv.Load()
-		if err != nil {
-			fmt.Println(".env файл не найден:", err)
-			return
-		}
+		_ = godotenv.Load()
 	}
 
 	log := logger.SetupLogger()
