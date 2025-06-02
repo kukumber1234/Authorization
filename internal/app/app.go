@@ -12,10 +12,12 @@ import (
 )
 
 func Start() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println(".env файл не найден:", err)
-		return
+	if os.Getenv("RENDER") == "" { // если локально
+		err := godotenv.Load()
+		if err != nil {
+			fmt.Println(".env файл не найден:", err)
+			return
+		}
 	}
 
 	log := logger.SetupLogger()
@@ -35,7 +37,10 @@ func Start() {
 
 	setupRoutex(mux, handler)
 
-	port := os.Getenv("HOST_PORT")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	log.Info("Server starting on http://localhost:" + port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Error("Error in server", "error", err)
