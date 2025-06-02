@@ -36,8 +36,8 @@ func Start() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Info("Server starting on http://localhost:" + port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	log.Info("Server starting on port " + port) 
+	if err := http.ListenAndServe("0.0.0.0:"+port, mux); err != nil {
 		log.Error("Error in server", "error", err)
 	}
 }
