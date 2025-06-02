@@ -169,7 +169,8 @@ func (r *PostgresUserRepository) RejectArticle(id int, reject domain.RejectReaso
 	return err
 }
 
-func (r *PostgresUserRepository) DeleteUser(id int) error {
-	_, err := r.DB.Exec(`DELETE FROM users WHERE id = $1`, id)
-	return err
+func (r *PostgresUserRepository) DeleteUser(id int) (string ,error) {
+	var name string
+	err := r.DB.QueryRow(`DELETE FROM users WHERE id = $1 RETURNING username`, id).Scan(&name)
+	return name, err
 }

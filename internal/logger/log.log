@@ -182,3 +182,18 @@ time=2025-06-02T11:07:01.304+05:00 level=INFO msg="Пользователь за
 time=2025-06-02T11:07:25.547+05:00 level=INFO msg="Пользователь вышел из аккаунта" email=author@gmail.com
 time=2025-06-02T11:07:35.985+05:00 level=INFO msg="Пользователь зашел в аккаунт" email=admin2@gmail.com
 time=2025-06-02T11:11:39.695+05:00 level=INFO msg="Server starting on http://localhost:8080"
+time=2025-06-02T11:15:27.064+05:00 level=INFO msg="Server starting on http://localhost:8080"
+time=2025-06-02T11:15:55.066+05:00 level=INFO msg="Пользователь вышел из аккаунта" email=admin2@gmail.com
+time=2025-06-02T11:16:04.983+05:00 level=INFO msg="Пользователь зашел в аккаунт" email=admin2@gmail.com
+time=2025-06-02T11:16:22.930+05:00 level=INFO msg="Пользователь вышел из аккаунта" email=admin2@gmail.com
+time=2025-06-02T11:16:32.673+05:00 level=INFO msg="Пользователь зашел в аккаунт" email=admin2@gmail.com
+time=2025-06-02T11:17:13.992+05:00 level=INFO msg="Server starting on http://localhost:8080"
+time=2025-06-02T11:20:50.549+05:00 level=INFO msg="Пользователь вышел из аккаунта" email=admin2@gmail.com
+time=2025-06-02T11:21:03.949+05:00 level=INFO msg="Пользователь зашел в аккаунт" email=author@gmail.com
+time=2025-06-02T11:21:35.107+05:00 level=INFO msg="Был откланен опасный контент" отправитель=author@gmail.com
+time=2025-06-02T11:27:56.948+05:00 level=INFO msg="Server starting on http://localhost:8080"
+time=2025-06-02T11:28:05.573+05:00 level=INFO msg="Пользователь вышел из аккаунта" email=author@gmail.com
+time=2025-06-02T11:28:13.829+05:00 level=INFO msg="Пользователь зашел в аккаунт" email=admin2@gmail.com
+time=2025-06-02T11:28:19.257+05:00 level=INFO msg="Админ удалил пользователя" admin=<nil> пользователь=AdminUser
+time=2025-06-02T11:29:21.248+05:00 level=INFO msg="Server starting on http://localhost:8080"
+time=2025-06-02T11:29:35.408+05:00 level=INFO msg="Админ удалил пользователя" admin=admin2@gmail.com пользователь=KateP

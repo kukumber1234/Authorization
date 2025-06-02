@@ -8,7 +8,7 @@ type UserRepository interface {
 	GetUserByEmail(email string) (*domain.User, error)
 	RegisterUser(regUser domain.User) error
 	GetAllUsers() ([]domain.UserReq, error)
-	DeleteUser(id int) error
+	DeleteUser(id int) (string ,error)
 }
 
 type ArticleRepository interface {

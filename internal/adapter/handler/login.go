@@ -169,13 +169,14 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.UserRepo.DeleteUser(id)
+	name, err := h.UserRepo.DeleteUser(id)
 	if err != nil {
 		fmt.Println("error:", err)
 		http.Error(w, "Error in DB", http.StatusInternalServerError)
 		return
 	}
 
+	h.Logger.Info("Админ удалил пользователя", "admin", claims["email"], "пользователь", name)
 	w.WriteHeader(http.StatusOK)
 }
 
