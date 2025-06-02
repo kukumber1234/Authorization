@@ -12,6 +12,7 @@ func setupRoutex(mux *http.ServeMux, handler *handler.Handler) {
 
 	mux.HandleFunc("POST /admin/users", handler.AddUser)
 	mux.HandleFunc("GET /admin/users", handler.GetAllUsers)
+	mux.HandleFunc("DELETE /admin/users/{userId}", handler.DeleteUser)
 
 	mux.HandleFunc("GET /moderator/articles", handler.GetArticleModern)
 	mux.HandleFunc("POST /moderator/articles/{id}/approve", handler.PostArtilceModernApprove)

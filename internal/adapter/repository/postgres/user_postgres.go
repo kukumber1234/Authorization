@@ -48,7 +48,7 @@ func (r *PostgresUserRepository) AddArticle(article domain.ArticleReq) error {
 }
 
 func (r *PostgresUserRepository) GetAllUsers() ([]domain.UserReq, error) {
-	rows, err := r.DB.Query(`SELECT email, username, role FROM users ORDER BY id`)
+	rows, err := r.DB.Query(`SELECT id, email, username, role FROM users ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (r *PostgresUserRepository) GetAllUsers() ([]domain.UserReq, error) {
 	users := []domain.UserReq{}
 	for rows.Next() {
 		var user domain.UserReq
-		if err := rows.Scan(&user.Email, &user.Username, &user.Role); err != nil {
+		if err := rows.Scan(&user.ID ,&user.Email, &user.Username, &user.Role); err != nil {
 			return nil, err
 		}
 
@@ -166,5 +166,10 @@ func (r *PostgresUserRepository) ApproveArticle(id int) error {
 
 func (r *PostgresUserRepository) RejectArticle(id int, reject domain.RejectReason) error {
 	_, err := r.DB.Exec(`UPDATE articles SET status = 'rejected', rejection_reason = $1, rejected_at = NOW() WHERE id = $2`, reject.Reason, id)
+	return err
+}
+
+func (r *PostgresUserRepository) DeleteUser(id int) error {
+	_, err := r.DB.Exec(`DELETE FROM users WHERE id = $1`, id)
 	return err
 }

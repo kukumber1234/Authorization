@@ -154,6 +154,31 @@ func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"users": users})
 }
 
+func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	claims, err := util.ValidateTokenFromRequest(r)
+	if err != nil || claims["role"] != "admin" {
+		http.Error(w, "Invalid role", http.StatusForbidden)
+		return
+	}
+
+	idStr := r.PathValue("userId")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid format", http.StatusBadRequest)
+		return
+	}
+
+	err = h.UserRepo.DeleteUser(id)
+	if err != nil {
+		fmt.Println("error:", err)
+		http.Error(w, "Error in DB", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *Handler) GetArticleModern(w http.ResponseWriter, r *http.Request) {
 	articles, err := h.ArticleRepo.GetArticlesInModern()
 	if err != nil {
@@ -166,17 +191,17 @@ func (h *Handler) GetArticleModern(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PostArtilceModernApprove(w http.ResponseWriter, r *http.Request) {
+	claims, err := util.ValidateTokenFromRequest(r)
+	if err != nil || claims["role"] != "moderator" {
+		http.Error(w, "Invalid role", http.StatusForbidden)
+		return
+	}
+
 	idStr := r.PathValue("id")
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid format", http.StatusBadRequest)
-		return
-	}
-
-	claims, err := util.ValidateTokenFromRequest(r)
-	if err != nil || claims["role"] != "moderator" {
-		http.Error(w, "Invalid role", http.StatusForbidden)
 		return
 	}
 

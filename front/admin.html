@@ -83,16 +83,86 @@
     #addUserForm button:hover { background: #315fcb; }
     .success-msg { color: green; min-height: 18px; margin-top: 8px;}
     .error-msg { color: red; min-height: 18px; margin-top: 8px;}
+    
+    /* Стили для кнопки удаления */
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .delete-btn:hover {
+      background: #bd2130;
+    }
+
+    /* -------- Модальное окно «Сообщение» -------- */
+    .modal-overlay, .confirm-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+    }
+    .modal-window, .confirm-window {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      width: 320px;
+      max-width: 90%;
+      z-index: 1001;
+      display: none;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .modal-window h3, .confirm-window h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: #333;
+    }
+    .modal-window p, .confirm-window p {
+      margin: 0 0 20px;
+      font-size: 15px;
+      color: #555;
+    }
+    .modal-window button, .confirm-window button {
+      display: inline-block;
+      margin: 0 10px 0 0;
+      background: #548aff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .modal-window button:hover, .confirm-window button:hover {
+      background: #315fcb;
+    }
+    /* Кнопка «Отмена» в confirm */
+    .confirm-window button.cancel-btn {
+      background: #dc3545;
+    }
+    .confirm-window button.cancel-btn:hover {
+      background: #a93232;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div style="text-align: right; margin-bottom: 14px;">
-     <a href="main_admin.html" 
-        style="background:#548aff; color:#fff; padding:10px 28px; border-radius:7px; text-decoration:none; font-size:16px; font-weight:500; box-shadow:0 1px 6px #548aff15;">
-     Главная страница
-  </a>
-</div>
+      <a href="main_admin.html" 
+         style="background:#548aff; color:#fff; padding:10px 28px; border-radius:7px; text-decoration:none; font-size:16px; font-weight:500; box-shadow:0 1px 6px #548aff15;">
+        Главная страница
+      </a>
+    </div>
 
     <h2>Админ-панель — управление пользователями</h2>
     <button class="add-user-btn" id="showAddUser">Добавить пользователя</button>
@@ -120,6 +190,7 @@
           <th>Email</th>
           <th>Имя</th>
           <th>Роль</th>
+          <th>Действия</th>
         </tr>
       </thead>
       <tbody>
@@ -127,56 +198,184 @@
       </tbody>
     </table>
   </div>
-  <script>
-    // Элементы
-    const showAddUserBtn = document.getElementById('showAddUser');
-    const addUserForm = document.getElementById('addUserForm');
-    const usersTableBody = document.getElementById('usersTable').querySelector('tbody');
 
+  <!-- Модальное окно «Сообщение» (для простого текста и одной кнопки) -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal-window" id="modalWindow">
+    <h3>Сообщение</h3>
+    <p id="modalMessage"></p>
+    <button id="modalCloseBtn">OK</button>
+  </div>
+
+  <!-- Модальное окно «Подтверждение» (для функции confirm) -->
+  <div class="confirm-overlay" id="confirmOverlay"></div>
+  <div class="confirm-window" id="confirmWindow">
+    <h3>Подтвердите действие</h3>
+    <p id="confirmMessage"></p>
+    <button id="confirmOkBtn">OK</button>
+    <button class="cancel-btn" id="confirmCancelBtn">Отмена</button>
+  </div>
+
+  <script>
+    // Элементы формы и таблицы
+    const showAddUserBtn   = document.getElementById('showAddUser');
+    const addUserForm      = document.getElementById('addUserForm');
+    const usersTableBody   = document.getElementById('usersTable').querySelector('tbody');
+
+    // Элементы модального «Сообщение»
+    const modalOverlay     = document.getElementById('modalOverlay');
+    const modalWindow      = document.getElementById('modalWindow');
+    const modalMessage     = document.getElementById('modalMessage');
+    const modalCloseBtn    = document.getElementById('modalCloseBtn');
+
+    // Элементы модального «Подтверждение»
+    const confirmOverlay   = document.getElementById('confirmOverlay');
+    const confirmWindow    = document.getElementById('confirmWindow');
+    const confirmMessage   = document.getElementById('confirmMessage');
+    const confirmOkBtn     = document.getElementById('confirmOkBtn');
+    const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+    // Показ/скрытие формы «Добавить пользователя»
     showAddUserBtn.onclick = () => {
-      addUserForm.style.display = (addUserForm.style.display === 'block') ? 'none' : 'block';
+      addUserForm.style.display = (addUserForm.style.display === 'block') 
+                                  ? 'none' 
+                                  : 'block';
     };
 
-    // Форма добавления пользователя
+    // ===========================
+    //   Функция showModal(...)
+    // ===========================
+    function showModal(message) {
+      modalMessage.textContent = message;
+      modalOverlay.style.display = 'block';
+      modalWindow.style.display  = 'block';
+    }
+    modalCloseBtn.onclick = () => {
+      modalOverlay.style.display = 'none';
+      modalWindow.style.display  = 'none';
+    };
+    modalOverlay.onclick = () => {
+      modalOverlay.style.display = 'none';
+      modalWindow.style.display  = 'none';
+    };
+
+    // =======================================
+    //   Функция showConfirm(...) ↺ Promise
+    // =======================================
+    // Возвращает Promise<boolean>: true, если нажали OK, false — если Отмена/клик по фону
+    function showConfirm(message) {
+      return new Promise(resolve => {
+        confirmMessage.textContent = message;
+        confirmOverlay.style.display = 'block';
+        confirmWindow.style.display  = 'block';
+
+        // Обработчик «OK»
+        confirmOkBtn.onclick = () => {
+          closeConfirm(); 
+          resolve(true);
+        };
+        // Обработчик «Отмена»
+        confirmCancelBtn.onclick = () => {
+          closeConfirm(); 
+          resolve(false);
+        };
+        // Если кликнули вне окна (по фону) — тоже считаем «Отмена»
+        confirmOverlay.onclick = () => {
+          closeConfirm();
+          resolve(false);
+        };
+
+        function closeConfirm() {
+          confirmOverlay.style.display = 'none';
+          confirmWindow.style.display  = 'none';
+          // Удаляем обработчики (чтобы не дублировались при следующем вызове)
+          confirmOkBtn.onclick = null;
+          confirmCancelBtn.onclick = null;
+          confirmOverlay.onclick = null;
+        }
+      });
+    }
+
+    // ======================================
+    //   Форма добавления пользователя (POST)
+    // ======================================
     addUserForm.onsubmit = async (e) => {
       e.preventDefault();
       document.getElementById('addUserSuccess').textContent = "";
-      document.getElementById('addUserError').textContent = "";
+      document.getElementById('addUserError').textContent   = "";
 
       const data = new FormData(addUserForm);
       const json = Object.fromEntries(data.entries());
 
-      const res = await fetch("/admin/users", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        credentials: "include",
-        body: JSON.stringify(json)
-      });
+      try {
+        const res = await fetch("/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(json)
+        });
 
-      if (res.ok) {
-        document.getElementById('addUserSuccess').textContent = "Пользователь добавлен!";
-        addUserForm.reset();
-        setTimeout(() => {
-          addUserForm.style.display = "none";
-          loadUsers();
-        }, 900);
-      } else {
-        const errMsg = await res.text();
-        document.getElementById('addUserError').textContent = errMsg || "Ошибка добавления";
+        if (res.ok) {
+          document.getElementById('addUserSuccess').textContent = "Пользователь добавлен!";
+          addUserForm.reset();
+          setTimeout(() => {
+            addUserForm.style.display = "none";
+            loadUsers();
+          }, 900);
+        } else {
+          const errMsg = await res.text();
+          document.getElementById('addUserError').textContent = errMsg || "Ошибка добавления";
+        }
+      } catch (error) {
+        console.error('Ошибка сети:', error);
+        document.getElementById('addUserError').textContent = "Сетевая ошибка";
       }
     };
 
-    // Загрузка пользователей
-    async function loadUsers() {
-      usersTableBody.innerHTML = `<tr><td colspan="3">Загрузка...</td></tr>`;
+    // =====================================================
+    //   Функция удаления пользователя (использует showConfirm)
+    // =====================================================
+    async function deleteUser(userId) {
+      // Вместо стандартного confirm(...) — вызываем свою функцию
+      const isConfirmed = await showConfirm('Вы уверены, что хотите удалить этого пользователя?');
+      if (!isConfirmed) {
+        return; // если нажали «Отмена» или кликнули по фону — выходим
+      }
+
       try {
-        const res = await fetch("/admin/users", { credentials: "include" }); // GET endpoint
+        const res = await fetch(`/admin/users/${userId}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+
+        if (res.ok) {
+          showModal('Пользователь успешно удалён');
+          loadUsers(); // обновляем список
+        } else {
+          const error = await res.text();
+          showModal(`Ошибка: ${error || 'Не удалось удалить пользователя'}`);
+        }
+      } catch (error) {
+        console.error('Ошибка при удалении:', error);
+        showModal('Сетевая ошибка при удалении пользователя');
+      }
+    }
+
+    // ==============================
+    //   Загрузка списка пользователей
+    // ==============================
+    async function loadUsers() {
+      usersTableBody.innerHTML = `<tr><td colspan="4">Загрузка...</td></tr>`;
+      try {
+        const res = await fetch("/admin/users", { credentials: "include" });
         if (!res.ok) throw new Error();
         const data = await res.json();
+
         if (!Array.isArray(data.users) || data.users.length === 0) {
-          usersTableBody.innerHTML = `<tr><td colspan="3">Пользователей нет</td></tr>`;
+          usersTableBody.innerHTML = `<tr><td colspan="4">Пользователей нет</td></tr>`;
           return;
         }
+
         usersTableBody.innerHTML = "";
         for (const user of data.users) {
           usersTableBody.innerHTML += `
@@ -184,22 +383,35 @@
               <td>${escapeHTML(user.email)}</td>
               <td>${escapeHTML(user.username)}</td>
               <td>${escapeHTML(user.role)}</td>
+              <td>
+                <button class="delete-btn" onclick="deleteUser('${user.id}')">
+                  Удалить
+                </button>
+              </td>
             </tr>
           `;
         }
       } catch {
-        usersTableBody.innerHTML = `<tr><td colspan="3" style="color:red;">Ошибка загрузки</td></tr>`;
+        usersTableBody.innerHTML = `<tr><td colspan="4" style="color:red;">Ошибка загрузки</td></tr>`;
       }
     }
 
-    // Экранирование для XSS
+    // =======================
+    //   Функция escapeHTML
+    // =======================
     function escapeHTML(str) {
       return String(str).replace(/[&<>"']/g, function (m) {
-        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[m];
       });
     }
 
-    // Загрузка пользователей при открытии страницы
+    // При первом открытии страницы загружаем список
     loadUsers();
   </script>
 </body>
